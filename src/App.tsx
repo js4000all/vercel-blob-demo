@@ -1,35 +1,62 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [key, setKey] = useState<string>('');
+  const [content, setContent] = useState<string>('');
+  const [fetched, setFetched] = useState<string>('');
+  const [message, setMessage] = useState<string>('');
+
+  const handleUpload = async () => {
+    setMessage('Uploading...');
+    try {
+      const res = await fetch('/api/put-blob', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, content }),
+      });
+      const data = await res.json();
+      setMessage(`✅ Uploaded: ${data.url}`);
+    } catch {
+      setMessage('❌ Upload failed');
+    }
+  };
+
+  const handleDownload = async () => {
+    setMessage('Downloading...');
+    try {
+      const res = await fetch(`/api/head-blob?key=${encodeURIComponent(key)}`);
+      const data = await res.json();
+      const fileRes = await fetch(data.url);
+      const text = await fileRes.text();
+      setFetched(text);
+      setMessage('✅ Download complete');
+    } catch {
+      setMessage('❌ Download failed');
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <main style={{ padding: 20, fontFamily: 'sans-serif' }}>
+      <h1>🗂 Vercel Blob Demo</h1>
+      <label>
+        ファイル名: <br />
+        <input value={key} onChange={(e) => setKey(e.target.value)} />
+      </label>
+      <br /><br />
+      <label>
+        内容: <br />
+        <textarea value={content} onChange={(e) => setContent(e.target.value)} />
+      </label>
+      <br /><br />
+      <button onClick={handleUpload}>⬆️ アップロード</button>
+      <button onClick={handleDownload}>⬇️ 読み取り</button>
+      <p>{message}</p>
+      {fetched && (
+        <>
+          <h3>読み取った内容:</h3>
+          <pre>{fetched}</pre>
+        </>
+      )}
+    </main>
+  );
 }
-
-export default App
